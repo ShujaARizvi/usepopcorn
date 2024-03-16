@@ -5,15 +5,41 @@ import Loader from "./Loader";
 
 const KEY = "5aef5ea1";
 
-export default function MovieDetails({ movieId, onCloseMovie }) {
+export default function MovieDetails({
+  movieId,
+  onCloseMovie,
+  onMovieWatched,
+  watchedMovies,
+}) {
   const [movieDetails, setMovieDetails] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userRating, setUserRating] = useState(0);
 
   function handleMovieRating(rating) {
-    console.log(rating);
+    setUserRating(rating);
   }
 
+  function handleMovieWatched() {
+    onMovieWatched({
+      poster,
+      title,
+      imdbID,
+      runtime: +runtime.split(" ").at(0),
+      userRating,
+      imdbRating: +imdbRating,
+    });
+    onCloseMovie();
+  }
+
+  const isWatched = watchedMovies
+    .map((movie) => movie.imdbID)
+    .includes(movieId);
+  const watchedUserRating = watchedMovies.find(
+    (movie) => movie.imdbID === movieId
+  )?.userRating;
+
   const {
+    imdbID,
     Title: title,
     Poster: poster,
     Runtime: runtime,
@@ -39,6 +65,24 @@ export default function MovieDetails({ movieId, onCloseMovie }) {
 
     fetchMovieDetails();
   }, [movieId]);
+
+  useEffect(() => {
+    if (!title) return;
+    document.title = `Movie | ${title}`;
+
+    return () => (document.title = "usePopcorn");
+  }, [title]);
+
+  useEffect(() => {
+    function keydown(e) {
+      if (e.code === "Escape") {
+        onCloseMovie();
+      }
+    }
+    document.addEventListener("keydown", keydown);
+
+    return () => document.removeEventListener("keydown", keydown);
+  }, [onCloseMovie]);
 
   return (
     <div className="details">
@@ -66,11 +110,25 @@ export default function MovieDetails({ movieId, onCloseMovie }) {
 
           <section>
             <div className="rating">
-              <StarRating
-                size={24}
-                maxRating={10}
-                onRating={handleMovieRating}
-              />
+              {!isWatched ? (
+                <>
+                  <StarRating
+                    size={24}
+                    maxRating={10}
+                    onRating={handleMovieRating}
+                  />
+                  {userRating > 0 && (
+                    <button className="btn-add" onClick={handleMovieWatched}>
+                      Add to list
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p>
+                  You have already rated this movie with {watchedUserRating}{" "}
+                  <span>⭐️</span>
+                </p>
+              )}
             </div>
             <p>
               <em>{plot}</em>

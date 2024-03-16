@@ -64,9 +64,9 @@ import Loader from "./Loader";
 const KEY = "5aef5ea1";
 
 export default function App() {
-  const [query, setQuery] = useState([]);
+  const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
-  const [watched] = useState([]);
+  const [watched, setWatched] = useState([]);
 
   const [selectedMovieId, setSelectedMovieId] = useState(null);
 
@@ -83,14 +83,25 @@ export default function App() {
     setSelectedMovieId(null);
   }
 
+  function handleMovieWatched(movie) {
+    setWatched((watched) => [...watched, movie]);
+  }
+
+  function handleDeleteWatched(movieId) {
+    setWatched((watched) => watched.filter((w) => w.imdbID !== movieId));
+  }
+
   useEffect(() => {
+    const controller = new AbortController();
+
     async function fetchMovies() {
       setIsLoading(true);
       setError("");
 
       try {
         const res = await fetch(
-          `http://www.omdbapi.com?apikey=${KEY}&s=${query}`
+          `http://www.omdbapi.com?apikey=${KEY}&s=${query}`,
+          { signal: controller.signal }
         );
 
         if (!res.ok)
@@ -101,8 +112,9 @@ export default function App() {
         if (data.Error) throw new Error(data.Error);
 
         setMovies(data.Search);
+        setError("");
       } catch (err) {
-        setError(err.message);
+        if (err.name !== "AbortError") setError(err.message);
       } finally {
         setIsLoading(false);
       }
@@ -114,7 +126,10 @@ export default function App() {
       return;
     }
 
+    handleMovieClose();
     fetchMovies();
+
+    return () => controller.abort();
   }, [query]);
 
   return (
@@ -137,11 +152,16 @@ export default function App() {
               key={selectedMovieId}
               movieId={selectedMovieId}
               onCloseMovie={handleMovieClose}
+              onMovieWatched={handleMovieWatched}
+              watchedMovies={watched}
             />
           ) : (
             <>
               <WatchedSummary watched={watched} />
-              <WatchedList watched={watched} />
+              <WatchedList
+                watched={watched}
+                onDeleteWatched={handleDeleteWatched}
+              />
             </>
           )}
         </Box>
