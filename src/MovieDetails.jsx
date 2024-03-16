@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import StarRating from "./StarRating/StarRating";
 import Loader from "./Loader";
+import { useKey } from "./Hooks/useKey";
 
 const KEY = "5aef5ea1";
 
@@ -73,16 +74,7 @@ export default function MovieDetails({
     return () => (document.title = "usePopcorn");
   }, [title]);
 
-  useEffect(() => {
-    function keydown(e) {
-      if (e.code === "Escape") {
-        onCloseMovie();
-      }
-    }
-    document.addEventListener("keydown", keydown);
-
-    return () => document.removeEventListener("keydown", keydown);
-  }, [onCloseMovie]);
+  useKey("Escape", onCloseMovie);
 
   return (
     <div className="details">
